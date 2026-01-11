@@ -1,23 +1,39 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import GlobalPitch from '@/components/map/GlobalPitch'
 import RefereeCard from '@/components/verdict/RefereeCard'
 import VARAnalysis from '@/components/charts/VARAnalysis'
 import ErrorBoundary from '@/components/ui/ErrorBoundary'
-import { useRegionData } from '@/hooks/useRegionData'
+import LoadingState, { LoadingOverlay } from '@/components/ui/LoadingState'
+import ShareButton from '@/components/ui/ShareButton'
+import RefereePriorityPanel from '@/components/ui/RefereePriorityPanel'
+import { useKeyboardShortcutsModal } from '@/components/ui/KeyboardShortcuts'
+import { useDashboard, useUrlSync } from '@/contexts/DashboardContext'
+import { useKeyboardNavigation } from '@/hooks/useKeyboardNavigation'
 import { useTheme } from '../components/ui/ThemeProvider'
 
 export default function Home() {
-    const [selectedRegion, setSelectedRegion] = useState<string | null>(null)
-    const [previousRegion, setPreviousRegion] = useState<string | null>(null)
-    const { verdicts, loading, error } = useRegionData()
+    const { state, navigateToRegion, updateWeights, reevaluateAllRegions } = useDashboard()
+    const { selectedRegion, verdicts, loading, error, isEvaluating } = state
     const { setTheme, playWhistle } = useTheme()
 
+    // Initialize URL synchronization
+    useUrlSync()
+
+    // Initialize keyboard navigation
+    const keyboardNav = useKeyboardNavigation({
+        enableGlobalShortcuts: true,
+        enableRegionNavigation: true,
+        enableAccessibility: true
+    })
+
+    // Initialize keyboard shortcuts modal
+    const { KeyboardShortcutsModal, toggleShortcuts } = useKeyboardShortcutsModal()
+
     const handleRegionSelect = (regionCode: string) => {
-        setPreviousRegion(selectedRegion)
-        setSelectedRegion(regionCode)
+        navigateToRegion(regionCode)
 
         // Update theme based on verdict
         const verdict = verdicts[regionCode]
@@ -47,6 +63,19 @@ export default function Home() {
         }
     }, [selectedRegion, setTheme])
 
+    // Handle keyboard shortcut for help
+    useEffect(() => {
+        const handleKeyDown = (event: KeyboardEvent) => {
+            if (event.key === '?' && !event.ctrlKey && !event.metaKey) {
+                toggleShortcuts()
+                event.preventDefault()
+            }
+        }
+
+        document.addEventListener('keydown', handleKeyDown)
+        return () => document.removeEventListener('keydown', handleKeyDown)
+    }, [toggleShortcuts])
+
     if (error) {
         return (
             <div className="min-h-screen flex items-center justify-center p-4">
@@ -58,7 +87,15 @@ export default function Home() {
                 >
                     <div className="text-red-400 text-4xl mb-4">⚠️</div>
                     <h2 className="text-xl font-semibold mb-2 text-red-400">Error Loading Data</h2>
-                    <p className="text-slate-400">{error}</p>
+                    <p className="text-slate-400 mb-4">{error}</p>
+                    <motion.button
+                        onClick={() => window.location.reload()}
+                        className="px-4 py-2 bg-red-600/20 hover:bg-red-600/30 border border-red-500/50 rounded-lg text-red-300 hover:text-red-200 transition-colors focus:outline-none focus:ring-2 focus:ring-red-400/50"
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                    >
+                        Retry
+                    </motion.button>
                 </motion.div>
             </div>
         )
@@ -72,7 +109,7 @@ export default function Home() {
                     <motion.header
                         initial={{ opacity: 0, y: -20 }}
                         animate={{ opacity: 1, y: 0 }}
-                        className="text-center py-4 sm:py-6 lg:py-8"
+                        className="text-center py-4 sm:py-6 lg:py-8 relative"
                     >
                         <motion.h1
                             className="text-2xl sm:text-3xl lg:text-4xl font-bold text-shadow mb-2"
@@ -81,78 +118,152 @@ export default function Home() {
                             ⚽ Region Arbitrator Dashboard
                         </motion.h1>
                         <motion.p
-                            className="text-slate-300 text-sm sm:text-base lg:text-lg"
+                            className="text-slate-300 text-sm sm:text-base lg:text-lg mb-4"
                             layoutId="main-subtitle"
                         >
                             The Referee has reviewed your cloud infrastructure choices
                         </motion.p>
+
+                        {/* Header Controls */}
+                        <div className="flex items-center justify-center space-x-4">
+                            <ShareButton variant="text" size="small" />
+                            <motion.button
+                                onClick={toggleShortcuts}
+                                className="px-3 py-2 text-sm text-slate-400 hover:text-slate-200 bg-slate-800/50 hover:bg-slate-700/50 border border-slate-600/50 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-slate-400/50"
+                                whileHover={{ scale: 1.05 }}
+                                whileTap={{ scale: 0.95 }}
+                                aria-label="Show keyboard shortcuts"
+                            >
+                                ⌨️ Shortcuts
+                            </motion.button>
+                        </div>
+
+                        {/* Navigation hint */}
+                        {!selectedRegion && (
+                            <motion.div
+                                className="mt-4 text-xs text-slate-500"
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                transition={{ delay: 1 }}
+                            >
+                                💡 Use arrow keys or click to navigate regions • Press ? for shortcuts
+                            </motion.div>
+                        )}
                     </motion.header>
 
-                    {/* Main Dashboard Grid */}
-                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 sm:gap-4 lg:gap-6">
-                        {/* Global Pitch Map */}
-                        <motion.div
-                            initial={{ opacity: 0, x: -20 }}
-                            animate={{ opacity: 1, x: 0 }}
-                            transition={{ delay: 0.2 }}
-                            className="lg:col-span-2"
-                            layoutId="global-pitch-container"
-                        >
-                            <GlobalPitch
-                                verdicts={verdicts}
-                                selectedRegion={selectedRegion}
-                                onRegionSelect={handleRegionSelect}
-                            />
-                        </motion.div>
+                    {/* Loading Overlay */}
+                    <LoadingOverlay
+                        isVisible={loading || isEvaluating}
+                        message={isEvaluating ? "The Referee is applying your new rules..." : "The Referee is analyzing cloud regions..."}
+                    />
 
-                        {/* Referee's Card */}
-                        <motion.div
-                            initial={{ opacity: 0, x: 20 }}
-                            animate={{ opacity: 1, x: 0 }}
-                            transition={{ delay: 0.4 }}
-                            layoutId="referee-card-container"
-                        >
-                            <AnimatePresence mode="wait">
+                    {/* Main Dashboard Grid */}
+                    <AnimatePresence mode="wait">
+                        {!loading && (
+                            <motion.div
+                                className="grid grid-cols-1 xl:grid-cols-4 gap-3 sm:gap-4 lg:gap-6"
+                                initial={{ opacity: 0, y: 20 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                exit={{ opacity: 0, y: -20 }}
+                                transition={{ duration: 0.5 }}
+                            >
+                                {/* Global Pitch Map */}
                                 <motion.div
-                                    key={selectedRegion || 'empty'}
-                                    initial={{ opacity: 0, scale: 0.95 }}
-                                    animate={{ opacity: 1, scale: 1 }}
-                                    exit={{ opacity: 0, scale: 0.95 }}
-                                    transition={{ duration: 0.3 }}
+                                    initial={{ opacity: 0, x: -20 }}
+                                    animate={{ opacity: 1, x: 0 }}
+                                    transition={{ delay: 0.2 }}
+                                    className="xl:col-span-2"
+                                    layoutId="global-pitch-container"
                                 >
-                                    <RefereeCard
-                                        verdict={selectedRegion ? verdicts[selectedRegion] : undefined}
-                                        isVisible={!!selectedRegion}
+                                    <GlobalPitch
+                                        verdicts={verdicts}
+                                        selectedRegion={selectedRegion}
+                                        onRegionSelect={handleRegionSelect}
                                     />
                                 </motion.div>
-                            </AnimatePresence>
-                        </motion.div>
-                    </div>
+
+                                {/* Referee's Card */}
+                                <motion.div
+                                    initial={{ opacity: 0, x: 20 }}
+                                    animate={{ opacity: 1, x: 0 }}
+                                    transition={{ delay: 0.4 }}
+                                    layoutId="referee-card-container"
+                                >
+                                    <AnimatePresence mode="wait">
+                                        <motion.div
+                                            key={selectedRegion || 'empty'}
+                                            initial={{ opacity: 0, scale: 0.95 }}
+                                            animate={{ opacity: 1, scale: 1 }}
+                                            exit={{ opacity: 0, scale: 0.95 }}
+                                            transition={{ duration: 0.3 }}
+                                        >
+                                            <RefereeCard
+                                                verdict={selectedRegion ? verdicts[selectedRegion] : undefined}
+                                                isVisible={!!selectedRegion}
+                                            />
+                                        </motion.div>
+                                    </AnimatePresence>
+                                </motion.div>
+
+                                {/* Referee Priority Panel */}
+                                <motion.div
+                                    initial={{ opacity: 0, x: 20 }}
+                                    animate={{ opacity: 1, x: 0 }}
+                                    transition={{ delay: 0.6 }}
+                                    layoutId="priority-panel-container"
+                                >
+                                    <RefereePriorityPanel
+                                        onWeightsChange={updateWeights}
+                                        onApplyRules={reevaluateAllRegions}
+                                    />
+                                </motion.div>
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
 
                     {/* VAR Analysis */}
-                    <motion.div
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: 0.6 }}
-                        className="mt-3 sm:mt-4 lg:mt-6"
-                        layoutId="var-analysis-container"
-                    >
-                        <AnimatePresence mode="wait">
+                    <AnimatePresence mode="wait">
+                        {!loading && (
                             <motion.div
-                                key={selectedRegion || 'default'}
-                                initial={{ opacity: 0, y: 10 }}
+                                initial={{ opacity: 0, y: 20 }}
                                 animate={{ opacity: 1, y: 0 }}
-                                exit={{ opacity: 0, y: -10 }}
-                                transition={{ duration: 0.4 }}
+                                transition={{ delay: 0.6 }}
+                                className="mt-3 sm:mt-4 lg:mt-6"
+                                layoutId="var-analysis-container"
                             >
-                                <VARAnalysis
-                                    selectedRegion={selectedRegion || undefined}
-                                    verdict={selectedRegion ? verdicts[selectedRegion] : undefined}
-                                />
+                                <AnimatePresence mode="wait">
+                                    <motion.div
+                                        key={selectedRegion || 'default'}
+                                        initial={{ opacity: 0, y: 10 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        exit={{ opacity: 0, y: -10 }}
+                                        transition={{ duration: 0.4 }}
+                                    >
+                                        <VARAnalysis
+                                            selectedRegion={selectedRegion || undefined}
+                                            verdict={selectedRegion ? verdicts[selectedRegion] : undefined}
+                                        />
+                                    </motion.div>
+                                </AnimatePresence>
                             </motion.div>
-                        </AnimatePresence>
-                    </motion.div>
+                        )}
+                    </AnimatePresence>
+
+                    {/* Keyboard Navigation Status */}
+                    {selectedRegion && keyboardNav.totalRegions > 0 && (
+                        <motion.div
+                            className="fixed bottom-4 right-4 glass-panel-enhanced px-3 py-2 text-xs text-slate-400"
+                            initial={{ opacity: 0, scale: 0.8 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            exit={{ opacity: 0, scale: 0.8 }}
+                        >
+                            Region {keyboardNav.currentIndex + 1} of {keyboardNav.totalRegions}
+                        </motion.div>
+                    )}
                 </div>
+
+                {/* Keyboard Shortcuts Modal */}
+                <KeyboardShortcutsModal />
             </main>
         </ErrorBoundary>
     )

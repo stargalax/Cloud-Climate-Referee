@@ -1,5 +1,5 @@
 // Verdict-based color utilities
-export const getVerdictColor = (verdict: 'Red Card' | 'Yellow Card' | 'Play On') => {
+export const getVerdictColor = (verdict: 'Red Card' | 'Yellow Card' | 'Play On' | 'Blue Card') => {
     switch (verdict) {
         case 'Red Card':
             return {
@@ -27,6 +27,15 @@ export const getVerdictColor = (verdict: 'Red Card' | 'Yellow Card' | 'Play On')
                 bg: 'bg-play-on/10',
                 text: 'text-play-on',
                 glow: 'shadow-green-500/20'
+            }
+        case 'Blue Card':
+            return {
+                primary: '#3B82F6',
+                secondary: '#DBEAFE',
+                border: 'border-blue-500/30',
+                bg: 'bg-blue-500/10',
+                text: 'text-blue-500',
+                glow: 'shadow-blue-500/20'
             }
         default:
             return {

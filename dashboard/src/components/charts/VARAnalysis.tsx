@@ -48,75 +48,60 @@ export default function VARAnalysis({ selectedRegion, verdict }: VARAnalysisProp
 
     // Prepare radar chart data
     const getRadarData = () => {
-        if (!verdict) return []
+        if (!verdict) {
+            return [
+                { subject: 'Carbon', A: 0, fullMark: 100 },
+                { subject: 'Latency', A: 0, fullMark: 100 },
+                { subject: 'Cost', A: 0, fullMark: 100 }
+            ]
+        }
 
         return [
-            {
-                factor: 'Carbon',
-                score: verdict.scores.carbon.score,
-                fullMark: 100
-            },
-            {
-                factor: 'Latency',
-                score: verdict.scores.latency.score,
-                fullMark: 100
-            },
-            {
-                factor: 'Cost',
-                score: verdict.scores.cost.score,
-                fullMark: 100
-            }
+            { subject: 'Carbon', A: verdict.scores.carbon.score, fullMark: 100 },
+            { subject: 'Latency', A: verdict.scores.latency.score, fullMark: 100 },
+            { subject: 'Cost', A: verdict.scores.cost.score, fullMark: 100 }
         ]
     }
 
-    // Generate ticker items
+    // Generate live ticker items
     useEffect(() => {
         const generateTickerItems = () => {
-            const regions = Object.values(verdicts)
+            const regions = Object.keys(verdicts)
+            if (regions.length === 0) return []
+
             const items: TickerItem[] = []
 
-            regions.forEach((verdict, index) => {
-                const renewablePercent = Math.floor(verdict.scores.carbon.renewablePercentage)
-                const carbonCategory = verdict.scores.carbon.category
-
-                let message = ''
-                if (renewablePercent > 80) {
-                    message = `${verdict.region.displayName.toUpperCase()} IS CURRENTLY ${renewablePercent}% RENEWABLE`
-                } else if (verdict.verdict === 'Red Card') {
-                    message = `${verdict.region.displayName.toUpperCase()} UNDER REVIEW - HIGH CARBON INTENSITY`
-                } else if (carbonCategory === 'very_clean') {
-                    message = `${verdict.region.displayName.toUpperCase()} SHOWING EXCELLENT GREEN PERFORMANCE`
-                } else {
-                    message = `${verdict.region.displayName.toUpperCase()} - ${renewablePercent}% RENEWABLE, ${verdict.verdict.toUpperCase()}`
+            // Add some sample ticker items
+            regions.slice(0, 3).forEach((regionCode, index) => {
+                const verdict = verdicts[regionCode]
+                if (verdict) {
+                    const renewablePercent = Math.round(verdict.scores.carbon.renewablePercentage)
+                    items.push({
+                        id: `ticker-${index}`,
+                        message: `${verdict.region.displayName.toUpperCase()} IS CURRENTLY ${renewablePercent}% RENEWABLE`,
+                        timestamp: new Date(),
+                        type: renewablePercent > 70 ? 'info' : 'alert'
+                    })
                 }
-
-                items.push({
-                    id: `${verdict.region.regionCode}-${index}`,
-                    message,
-                    timestamp: new Date(),
-                    type: verdict.verdict === 'Red Card' ? 'alert' : 'info'
-                })
             })
 
             return items
         }
 
-        if (Object.keys(verdicts).length > 0) {
-            setTickerItems(generateTickerItems())
-        }
+        setTickerItems(generateTickerItems())
     }, [verdicts])
 
-    // Animated carbon intensity ticker
+    // Animate carbon intensity value
     useEffect(() => {
         if (verdict) {
-            const targetIntensity = Math.floor(Math.random() * 400) + 50
+            const targetIntensity = Math.round((100 - verdict.scores.carbon.score) * 5) // Convert score to gCO2/kWh
             const interval = setInterval(() => {
                 setCurrentCarbonIntensity(prev => {
                     const diff = targetIntensity - prev
                     if (Math.abs(diff) < 1) return targetIntensity
                     return prev + diff * 0.1
                 })
-            }, 100)
+            }, 50)
 
             return () => clearInterval(interval)
         }
@@ -139,25 +124,13 @@ export default function VARAnalysis({ selectedRegion, verdict }: VARAnalysisProp
                     </motion.h3>
                     {verdict && (
                         <motion.div
-                            className="flex items-center gap-4"
+                            className="flex items-center gap-2 text-sm text-slate-400"
                             initial={{ opacity: 0, x: 20 }}
                             animate={{ opacity: 1, x: 0 }}
-                            layoutId="carbon-intensity-display"
+                            transition={{ delay: 0.3 }}
                         >
-                            <div className="text-right">
-                                <div className="text-xs sm:text-sm text-slate-400">Carbon Intensity</div>
-                                <motion.div
-                                    className="text-xl sm:text-2xl font-mono font-bold"
-                                    style={{ color: verdictColors.primary }}
-                                    key={Math.floor(currentCarbonIntensity)}
-                                    initial={{ scale: 1.2 }}
-                                    animate={{ scale: 1 }}
-                                    transition={{ duration: 0.2 }}
-                                >
-                                    {Math.floor(currentCarbonIntensity)}
-                                    <span className="text-xs sm:text-sm ml-1">gCO₂/kWh</span>
-                                </motion.div>
-                            </div>
+                            <span className="animate-pulse">🔴</span>
+                            LIVE DATA
                         </motion.div>
                     )}
                 </div>
@@ -170,35 +143,50 @@ export default function VARAnalysis({ selectedRegion, verdict }: VARAnalysisProp
                     >
                         <h4 className="text-base sm:text-lg font-medium">Trade-off Analysis</h4>
                         <div className="h-48 sm:h-64">
-                            {radarData.length > 0 ? (
-                                <ResponsiveContainer width="100%" height="100%">
-                                    <RadarChart data={radarData}>
-                                        <PolarGrid stroke="rgba(148, 163, 184, 0.2)" />
-                                        <PolarAngleAxis
-                                            dataKey="factor"
-                                            tick={{ fill: '#94a3b8', fontSize: 12 }}
-                                        />
-                                        <PolarRadiusAxis
-                                            angle={90}
-                                            domain={[0, 100]}
-                                            tick={{ fill: '#64748b', fontSize: 10 }}
-                                        />
-                                        <Radar
-                                            name="Score"
-                                            dataKey="score"
-                                            stroke={verdictColors.primary}
-                                            fill={verdictColors.primary}
-                                            fillOpacity={0.2}
-                                            strokeWidth={2}
-                                        />
-                                    </RadarChart>
-                                </ResponsiveContainer>
-                            ) : (
-                                <div className="h-full flex items-center justify-center text-slate-400 text-sm sm:text-base text-center px-4">
-                                    Select a region to view trade-off analysis
-                                </div>
-                            )}
+                            <ResponsiveContainer width="100%" height="100%">
+                                <RadarChart data={radarData}>
+                                    <PolarGrid stroke="rgba(148, 163, 184, 0.2)" />
+                                    <PolarAngleAxis
+                                        tick={{ fill: '#64748b', fontSize: 12 }}
+                                        className="text-xs sm:text-sm"
+                                    />
+                                    <PolarRadiusAxis
+                                        angle={90}
+                                        domain={[0, 100]}
+                                        tick={{ fill: '#64748b', fontSize: 10 }}
+                                        tickCount={6}
+                                    />
+                                    <Radar
+                                        name="Scores"
+                                        dataKey="A"
+                                        stroke={verdictColors.primary}
+                                        fill={verdictColors.primary}
+                                        fillOpacity={0.2}
+                                        strokeWidth={2}
+                                    />
+                                </RadarChart>
+                            </ResponsiveContainer>
                         </div>
+
+                        {/* Current Carbon Intensity Display */}
+                        {verdict && (
+                            <motion.div
+                                className="text-center p-4 bg-slate-800/50 rounded-lg border border-slate-700/50"
+                                initial={{ scale: 0.9, opacity: 0 }}
+                                animate={{ scale: 1, opacity: 1 }}
+                                transition={{ delay: 0.5 }}
+                            >
+                                <div className="text-2xl sm:text-3xl font-bold text-white mb-1">
+                                    {Math.round(currentCarbonIntensity)}
+                                </div>
+                                <div className="text-xs sm:text-sm text-slate-400">
+                                    gCO₂/kWh Current Intensity
+                                </div>
+                                <div className="text-xs text-slate-500 mt-1">
+                                    {Math.round(verdict.scores.carbon.renewablePercentage)}% Renewable
+                                </div>
+                            </motion.div>
+                        )}
                     </motion.div>
 
                     {/* 24-Hour Forecast */}
@@ -243,51 +231,51 @@ export default function VARAnalysis({ selectedRegion, verdict }: VARAnalysisProp
                                 </AreaChart>
                             </ResponsiveContainer>
                         </div>
+                    </motion.div>
                 </div>
             </div>
-        </div>
 
-        {/* Live Ticker Panel */ }
-    <motion.div
-        className="glass-panel-enhanced h-12 sm:h-16 overflow-hidden relative"
-        layoutId="live-ticker-container"
-    >
-        <div className="absolute inset-0 flex items-center">
-            <div className="flex items-center gap-1 sm:gap-2 px-2 sm:px-4 bg-gradient-to-r from-red-600 to-red-500 text-white font-bold text-xs sm:text-sm">
-                <span className="animate-pulse">🔴</span>
-                LIVE
-            </div>
-            <div className="flex-1 overflow-hidden">
-                <AnimatePresence>
-                    {tickerItems.length > 0 && (
-                        <motion.div
-                            className="flex items-center whitespace-nowrap"
-                            initial={{ x: '100%' }}
-                            animate={{ x: '-100%' }}
-                            transition={{
-                                duration: 30,
-                                repeat: Infinity,
-                                ease: 'linear'
-                            }}
-                        >
-                            {tickerItems.map((item, index) => (
-                                <span
-                                    key={item.id}
-                                    className={`px-4 sm:px-8 text-xs sm:text-sm font-medium ${item.type === 'alert' ? 'text-red-400' : 'text-slate-300'
-                                        }`}
+            {/* Live Ticker Panel */}
+            <motion.div
+                className="glass-panel-enhanced h-12 sm:h-16 overflow-hidden relative"
+                layoutId="live-ticker-container"
+            >
+                <div className="absolute inset-0 flex items-center">
+                    <div className="flex items-center gap-1 sm:gap-2 px-2 sm:px-4 bg-gradient-to-r from-red-600 to-red-500 text-white font-bold text-xs sm:text-sm">
+                        <span className="animate-pulse">🔴</span>
+                        LIVE
+                    </div>
+                    <div className="flex-1 overflow-hidden">
+                        <AnimatePresence>
+                            {tickerItems.length > 0 && (
+                                <motion.div
+                                    className="flex items-center whitespace-nowrap"
+                                    initial={{ x: '100%' }}
+                                    animate={{ x: '-100%' }}
+                                    transition={{
+                                        duration: 30,
+                                        repeat: Infinity,
+                                        ease: 'linear'
+                                    }}
                                 >
-                                    LATEST: {item.message}
-                                    {index < tickerItems.length - 1 && (
-                                        <span className="mx-2 sm:mx-4 text-slate-500">•</span>
-                                    )}
-                                </span>
-                            ))}
-                        </motion.div>
-                    )}
-                </AnimatePresence>
-            </div>
+                                    {tickerItems.map((item, index) => (
+                                        <span
+                                            key={item.id}
+                                            className={`px-4 sm:px-8 text-xs sm:text-sm font-medium ${item.type === 'alert' ? 'text-red-400' : 'text-slate-300'
+                                                }`}
+                                        >
+                                            LATEST: {item.message}
+                                            {index < tickerItems.length - 1 && (
+                                                <span className="mx-2 sm:mx-4 text-slate-500">•</span>
+                                            )}
+                                        </span>
+                                    ))}
+                                </motion.div>
+                            )}
+                        </AnimatePresence>
+                    </div>
+                </div>
+            </motion.div>
         </div>
-    </motion.div>
-        </div >
     )
 }

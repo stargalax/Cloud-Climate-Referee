@@ -64,7 +64,7 @@ function CircularProgress({ score, size = 120 }: { score: number; size?: number 
 }
 
 // Verdict icon component
-function VerdictIcon({ verdict }: { verdict: 'Red Card' | 'Yellow Card' | 'Play On' }) {
+function VerdictIcon({ verdict }: { verdict: 'Red Card' | 'Yellow Card' | 'Play On' | 'Blue Card' }) {
     const getIcon = () => {
         switch (verdict) {
             case 'Red Card':
@@ -73,6 +73,8 @@ function VerdictIcon({ verdict }: { verdict: 'Red Card' | 'Yellow Card' | 'Play 
                 return '🟨'
             case 'Play On':
                 return '🟢'
+            case 'Blue Card':
+                return '🔵'
         }
     }
 

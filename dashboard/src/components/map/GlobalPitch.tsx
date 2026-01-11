@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { ComposableMap, Geographies, Geography, Marker } from 'react-simple-maps'
 import { motion, AnimatePresence } from 'framer-motion'
 import { AWS_REGIONS } from '../../data/aws-regions'
@@ -22,6 +22,8 @@ export default function GlobalPitch({
     onRegionSelect
 }: GlobalPitchProps) {
     const [hoveredRegion, setHoveredRegion] = useState<string | null>(null)
+    const [focusedRegion, setFocusedRegion] = useState<string | null>(null)
+    const mapRef = useRef<HTMLDivElement>(null)
 
     const getMarkerColor = (regionCode: string) => {
         const verdict = verdicts[regionCode]
@@ -40,11 +42,41 @@ export default function GlobalPitch({
     }
 
     const isRegionActive = (regionCode: string) => {
-        return selectedRegion === regionCode || hoveredRegion === regionCode
+        return selectedRegion === regionCode || hoveredRegion === regionCode || focusedRegion === regionCode
     }
 
+    // Handle keyboard navigation within the map
+    const handleKeyDown = (event: KeyboardEvent, regionCode: string) => {
+        switch (event.key) {
+            case 'Enter':
+            case ' ':
+                onRegionSelect?.(regionCode)
+                event.preventDefault()
+                break
+            case 'Escape':
+                setFocusedRegion(null)
+                event.preventDefault()
+                break
+        }
+    }
+
+    // Focus management for accessibility
+    useEffect(() => {
+        if (selectedRegion && mapRef.current) {
+            const markerButton = mapRef.current.querySelector(`[data-region="${selectedRegion}"]`) as HTMLElement
+            if (markerButton) {
+                markerButton.focus()
+            }
+        }
+    }, [selectedRegion])
+
     return (
-        <div className="glass-panel-enhanced h-80 sm:h-96 relative overflow-hidden">
+        <div
+            className="glass-panel-enhanced h-80 sm:h-96 relative overflow-hidden"
+            ref={mapRef}
+            role="application"
+            aria-label="Interactive world map showing AWS regions with referee verdicts"
+        >
             {/* Stadium Spotlight Effect */}
             <AnimatePresence>
                 {selectedRegion && (
@@ -74,6 +106,8 @@ export default function GlobalPitch({
                     center: [0, 20]
                 }}
                 className="w-full h-full"
+                role="img"
+                aria-label="World map"
             >
                 <Geographies geography={geoUrl}>
                     {({ geographies }) =>
@@ -91,7 +125,7 @@ export default function GlobalPitch({
                 </Geographies>
 
                 {/* AWS Region Markers */}
-                {AWS_REGIONS.map((region) => {
+                {AWS_REGIONS.map((region, index) => {
                     const isActive = isRegionActive(region.regionCode)
                     const markerColor = getMarkerColor(region.regionCode)
                     const verdict = verdicts[region.regionCode]
@@ -113,11 +147,23 @@ export default function GlobalPitch({
                                     damping: 20,
                                     layout: { duration: 0.3 }
                                 }}
-                                className="cursor-pointer"
-                                onMouseEnter={() => setHoveredRegion(region.regionCode)}
-                                onMouseLeave={() => setHoveredRegion(null)}
-                                onClick={() => onRegionSelect?.(region.regionCode)}
                             >
+                                {/* Invisible button for keyboard accessibility */}
+                                <foreignObject x={-15} y={-15} width={30} height={30}>
+                                    <button
+                                        data-region={region.regionCode}
+                                        className="w-full h-full bg-transparent border-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-white/50 focus:ring-offset-2 focus:ring-offset-transparent rounded-full"
+                                        onMouseEnter={() => setHoveredRegion(region.regionCode)}
+                                        onMouseLeave={() => setHoveredRegion(null)}
+                                        onFocus={() => setFocusedRegion(region.regionCode)}
+                                        onBlur={() => setFocusedRegion(null)}
+                                        onClick={() => onRegionSelect?.(region.regionCode)}
+                                        onKeyDown={(e) => handleKeyDown(e.nativeEvent, region.regionCode)}
+                                        aria-label={`${region.displayName} (${region.regionCode}) - ${verdict ? `${verdict.verdict}, Score: ${Math.round(verdict.scores.composite.overallScore)}` : 'Not evaluated'}`}
+                                        tabIndex={0}
+                                    />
+                                </foreignObject>
+
                                 {/* Pulsing outer ring */}
                                 <motion.circle
                                     r={12}
@@ -134,7 +180,22 @@ export default function GlobalPitch({
                                         repeat: Infinity,
                                         ease: "easeInOut"
                                     }}
+                                    className="pointer-events-none"
                                 />
+
+                                {/* Focus ring for keyboard navigation */}
+                                {focusedRegion === region.regionCode && (
+                                    <motion.circle
+                                        r={10}
+                                        fill="none"
+                                        stroke="white"
+                                        strokeWidth={2}
+                                        opacity={0.8}
+                                        initial={{ scale: 0.8, opacity: 0 }}
+                                        animate={{ scale: 1, opacity: 0.8 }}
+                                        className="pointer-events-none"
+                                    />
+                                )}
 
                                 {/* Main marker circle */}
                                 <circle
@@ -142,7 +203,7 @@ export default function GlobalPitch({
                                     fill={markerColor}
                                     stroke="white"
                                     strokeWidth={2}
-                                    className={`drop-shadow-lg ${getMarkerGlow(region.regionCode)}`}
+                                    className={`drop-shadow-lg ${getMarkerGlow(region.regionCode)} pointer-events-none`}
                                     style={{
                                         filter: `drop-shadow(0 0 8px ${markerColor}40)`
                                     }}
@@ -159,6 +220,18 @@ export default function GlobalPitch({
                                 >
                                     {region.regionCode.toUpperCase()}
                                 </text>
+
+                                {/* Number indicator for keyboard navigation */}
+                                <text
+                                    textAnchor="middle"
+                                    y={18}
+                                    className="fill-slate-400 text-xs font-medium pointer-events-none"
+                                    style={{
+                                        textShadow: '0 1px 2px rgba(0,0,0,0.8)'
+                                    }}
+                                >
+                                    {index < 9 ? (index + 1).toString() : index === 9 ? '0' : ''}
+                                </text>
                             </motion.g>
                         </Marker>
                     )
@@ -167,17 +240,20 @@ export default function GlobalPitch({
 
             {/* Tooltip */}
             <AnimatePresence>
-                {hoveredRegion && (
+                {(hoveredRegion || focusedRegion) && (
                     <motion.div
                         initial={{ opacity: 0, y: 10, scale: 0.9 }}
                         animate={{ opacity: 1, y: 0, scale: 1 }}
                         exit={{ opacity: 0, y: 10, scale: 0.9 }}
                         transition={{ duration: 0.2 }}
                         className="absolute bottom-4 left-4 glass-panel-enhanced p-3 min-w-48"
+                        role="tooltip"
+                        aria-live="polite"
                     >
                         {(() => {
-                            const region = AWS_REGIONS.find(r => r.regionCode === hoveredRegion)
-                            const verdict = verdicts[hoveredRegion]
+                            const activeRegion = hoveredRegion || focusedRegion
+                            const region = AWS_REGIONS.find(r => r.regionCode === activeRegion)
+                            const verdict = verdicts[activeRegion!]
 
                             if (!region) return null
 
@@ -186,7 +262,7 @@ export default function GlobalPitch({
                                     <div className="flex items-center gap-2 mb-2">
                                         <div
                                             className="w-3 h-3 rounded-full"
-                                            style={{ backgroundColor: getMarkerColor(hoveredRegion) }}
+                                            style={{ backgroundColor: getMarkerColor(activeRegion!) }}
                                         />
                                         <span className="font-semibold text-white">
                                             {region.displayName}
@@ -207,6 +283,12 @@ export default function GlobalPitch({
                                                 <div className="text-xs text-slate-400">
                                                     Score: {verdict.scores.composite.overallScore.toFixed(0)}/100
                                                 </div>
+                                            </div>
+                                        )}
+
+                                        {focusedRegion === activeRegion && (
+                                            <div className="text-xs text-slate-500 mt-2 pt-2 border-t border-white/10">
+                                                Press Enter or Space to select
                                             </div>
                                         )}
                                     </div>
@@ -269,6 +351,11 @@ export default function GlobalPitch({
                         <span className="text-slate-300">Not Evaluated</span>
                     </motion.div>
                 </div>
+            </div>
+
+            {/* Keyboard navigation hint */}
+            <div className="absolute bottom-4 right-4 text-xs text-slate-500">
+                Use 1-9, 0 or Tab to navigate
             </div>
         </div>
     )

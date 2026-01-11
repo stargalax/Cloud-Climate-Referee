@@ -15,7 +15,7 @@ export interface GeographicLocation {
 
 export interface ArbitratorVerdict {
     region: CloudRegion
-    verdict: 'Red Card' | 'Yellow Card' | 'Play On'
+    verdict: 'Red Card' | 'Yellow Card' | 'Play On' | 'Blue Card'
     reason: string
     suggestion: GreenSuggestion
     scores: {
@@ -25,6 +25,7 @@ export interface ArbitratorVerdict {
         composite: CompositeScore
     }
     timestamp: Date
+    refereeConfidence?: 'High' | 'Medium' | 'Low'
 }
 
 export interface GreenSuggestion {
@@ -42,6 +43,12 @@ export interface CompositeScore {
         cost: number
     }
     confidence: number // 0-1
+}
+
+export interface FactorWeights {
+    latency: number // 0-1, default 0.4
+    carbon: number // 0-1, default 0.4  
+    cost: number // 0-1, default 0.2
 }
 
 export interface FactorScore {
@@ -75,7 +82,7 @@ export interface DashboardState {
 export interface MapMarker {
     regionCode: string
     coordinates: [number, number]
-    verdict?: 'Red Card' | 'Yellow Card' | 'Play On'
+    verdict?: 'Red Card' | 'Yellow Card' | 'Play On' | 'Blue Card'
     score?: number
 }
 
