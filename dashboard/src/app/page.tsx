@@ -29,10 +29,9 @@ export default function Home() {
         enableAccessibility: true
     })
 
-    // Determine if we should use dark text based on verdict state
-    const currentVerdict = selectedRegion ? verdicts[selectedRegion] : null
-    const shouldUseDarkText = currentVerdict !== null
-    const headerTextClass = shouldUseDarkText ? 'text-slate-950' : 'text-white'
+    // Determine if we should use dark text for light backgrounds
+    const shouldUseDarkText = currentTheme === 'yellow' || currentTheme === 'green' || currentTheme === 'red'
+    const headerTextClass = shouldUseDarkText ? 'text-slate-900' : 'text-white'
     const subtitleTextClass = shouldUseDarkText ? 'text-slate-700' : 'text-slate-300'
 
     const handleRegionSelect = (regionCode: string) => {
