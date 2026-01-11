@@ -5,6 +5,8 @@
 The Region Arbitrator is a cloud region evaluation system that uses a "Referee" metaphor to provide verdicts on AWS, Azure, and GCP regions based on three key metrics: **Carbon Intensity**, **Latency**, and **Cost**. The system delivers verdicts in the form of colored cards (🟢 Play On, 🟡 Yellow Card, 🔴 Red Card, 🔵 Blue Card) to guide infrastructure decisions.
 
 ---
+## Youtube link
+[![Region Arbitrator Demo](https://img.youtube.com/vi/mwZSbuYwukI/hqdefault.jpg)](https://youtu.be/mwZSbuYwukI)
 
 ## Architecture Diagram
 
