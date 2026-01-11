@@ -75,7 +75,7 @@ export default function AnalysisPanel({ verdict, isVisible = true }: AnalysisPan
                 transition={{ type: "spring", stiffness: 400, damping: 10 }}
             >
                 <div className="text-slate-400">
-                    Select a region to see the Referee's analysis
+                    Select a region to see the Referee&apos;s analysis
                 </div>
             </motion.div>
         )
@@ -117,7 +117,7 @@ export default function AnalysisPanel({ verdict, isVisible = true }: AnalysisPan
                 >
                     <div className="flex items-center gap-2 mb-4">
                         <span className="text-xl">📋</span>
-                        <h3 className="text-lg font-semibold text-white">Referee's Analysis</h3>
+                        <h3 className="text-lg font-semibold text-white">Referee&apos;s Analysis</h3>
                         <div className="ml-auto text-xs text-slate-400">
                             Confidence: <span className={getConfidenceColor(verdict.scores.composite.confidence)}>{confidenceLevel}</span>
                         </div>
