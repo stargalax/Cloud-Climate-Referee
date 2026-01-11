@@ -21,11 +21,10 @@ import { getVerdictColor } from '@/utils/colors'
 import { useRegionData } from '@/hooks/useRegionData'
 
 interface VARAnalysisProps {
-    selectedRegion?: string
     verdict?: ArbitratorVerdict
 }
 
-export default function VARAnalysis({ selectedRegion, verdict }: VARAnalysisProps) {
+export default function VARAnalysis({ verdict }: VARAnalysisProps) {
     const { verdicts } = useRegionData()
     const [currentCarbonIntensity, setCurrentCarbonIntensity] = useState(0)
     const [tickerItems, setTickerItems] = useState<TickerItem[]>([])
@@ -215,7 +214,7 @@ export default function VARAnalysis({ selectedRegion, verdict }: VARAnalysisProp
                                             borderRadius: '8px',
                                             color: '#e2e8f0'
                                         }}
-                                        formatter={(value: number, name: string) => [
+                                        formatter={(value: number) => [
                                             `${value} gCO₂/kWh`,
                                             'Carbon Intensity'
                                         ]}

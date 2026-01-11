@@ -112,7 +112,7 @@ export default function RefereeCard({ verdict, isVisible = true }: RefereeCardPr
                     <div className="text-4xl sm:text-6xl mb-4">⚽</div>
                     <h3 className="text-lg sm:text-xl font-semibold mb-2 text-slate-300">Awaiting Verdict</h3>
                     <p className="text-sm sm:text-base text-slate-400">
-                        Select a region to see the Referee's decision
+                        Select a region to see the Referee&apos;s decision
                     </p>
                 </div>
             </div>
@@ -153,7 +153,7 @@ export default function RefereeCard({ verdict, isVisible = true }: RefereeCardPr
                 <div className="flex items-center gap-3">
                     <WhistleIcon />
                     <div>
-                        <h2 className="text-lg font-bold text-white">REFEREE'S DECISION</h2>
+                        <h2 className="text-lg font-bold text-white">REFEREE&apos;S DECISION</h2>
                         <p className="text-sm text-slate-400">
                             Referee Confidence: <span className={getConfidenceColor(verdict.scores.composite.confidence)}>{confidenceLevel}</span>
                         </p>
@@ -192,7 +192,7 @@ export default function RefereeCard({ verdict, isVisible = true }: RefereeCardPr
                 className="space-y-3"
             >
                 <h3 className="text-lg font-semibold text-white flex items-center gap-2">
-                    📋 Referee's Analysis
+                    📋 Referee&apos;s Analysis
                 </h3>
                 <div className="bg-slate-800/50 rounded-lg p-4 border border-slate-700/50">
                     <p className="text-slate-200 leading-relaxed">

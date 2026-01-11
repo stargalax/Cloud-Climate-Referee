@@ -17,7 +17,7 @@ export function useKeyboardNavigation(options: UseKeyboardNavigationOptions = {}
         enableAccessibility = true
     } = options
 
-    const { state, selectRegion, clearSelection, navigateToRegion } = useDashboard()
+    const { state, clearSelection, navigateToRegion } = useDashboard()
     const { selectedRegion, verdicts } = state
 
     // Keep track of available regions
@@ -33,58 +33,7 @@ export function useKeyboardNavigation(options: UseKeyboardNavigationOptions = {}
         }
     }, [selectedRegion, availableRegions])
 
-    // Navigation functions
-    const navigateNext = useCallback(() => {
-        if (!enableRegionNavigation) return
-
-        const nextIndex = (currentIndex.current + 1) % availableRegions.length
-        const nextRegion = availableRegions[nextIndex]
-        navigateToRegion(nextRegion)
-
-        // Announce to screen readers
-        if (enableAccessibility) {
-            announceRegionChange(nextRegion, 'next')
-        }
-    }, [availableRegions, navigateToRegion, enableRegionNavigation, enableAccessibility])
-
-    const navigatePrevious = useCallback(() => {
-        if (!enableRegionNavigation) return
-
-        const prevIndex = currentIndex.current <= 0
-            ? availableRegions.length - 1
-            : currentIndex.current - 1
-        const prevRegion = availableRegions[prevIndex]
-        navigateToRegion(prevRegion)
-
-        // Announce to screen readers
-        if (enableAccessibility) {
-            announceRegionChange(prevRegion, 'previous')
-        }
-    }, [availableRegions, navigateToRegion, enableRegionNavigation, enableAccessibility])
-
-    const selectFirstRegion = useCallback(() => {
-        if (!enableRegionNavigation || availableRegions.length === 0) return
-
-        const firstRegion = availableRegions[0]
-        navigateToRegion(firstRegion)
-
-        if (enableAccessibility) {
-            announceRegionChange(firstRegion, 'first')
-        }
-    }, [availableRegions, navigateToRegion, enableRegionNavigation, enableAccessibility])
-
-    const selectLastRegion = useCallback(() => {
-        if (!enableRegionNavigation || availableRegions.length === 0) return
-
-        const lastRegion = availableRegions[availableRegions.length - 1]
-        navigateToRegion(lastRegion)
-
-        if (enableAccessibility) {
-            announceRegionChange(lastRegion, 'last')
-        }
-    }, [availableRegions, navigateToRegion, enableRegionNavigation, enableAccessibility])
-
-    // Screen reader announcements
+    // Screen reader announcements - defined first to avoid circular dependency
     const announceRegionChange = useCallback((regionCode: string, direction: string) => {
         const region = AWS_REGIONS.find(r => r.regionCode === regionCode)
         const verdict = verdicts[regionCode]
@@ -107,6 +56,57 @@ export function useKeyboardNavigation(options: UseKeyboardNavigationOptions = {}
             }, 1000)
         }
     }, [verdicts])
+
+    // Navigation functions
+    const navigateNext = useCallback(() => {
+        if (!enableRegionNavigation) return
+
+        const nextIndex = (currentIndex.current + 1) % availableRegions.length
+        const nextRegion = availableRegions[nextIndex]
+        navigateToRegion(nextRegion)
+
+        // Announce to screen readers
+        if (enableAccessibility) {
+            announceRegionChange(nextRegion, 'next')
+        }
+    }, [availableRegions, navigateToRegion, enableRegionNavigation, enableAccessibility, announceRegionChange])
+
+    const navigatePrevious = useCallback(() => {
+        if (!enableRegionNavigation) return
+
+        const prevIndex = currentIndex.current <= 0
+            ? availableRegions.length - 1
+            : currentIndex.current - 1
+        const prevRegion = availableRegions[prevIndex]
+        navigateToRegion(prevRegion)
+
+        // Announce to screen readers
+        if (enableAccessibility) {
+            announceRegionChange(prevRegion, 'previous')
+        }
+    }, [availableRegions, navigateToRegion, enableRegionNavigation, enableAccessibility, announceRegionChange])
+
+    const selectFirstRegion = useCallback(() => {
+        if (!enableRegionNavigation || availableRegions.length === 0) return
+
+        const firstRegion = availableRegions[0]
+        navigateToRegion(firstRegion)
+
+        if (enableAccessibility) {
+            announceRegionChange(firstRegion, 'first')
+        }
+    }, [availableRegions, navigateToRegion, enableRegionNavigation, enableAccessibility, announceRegionChange])
+
+    const selectLastRegion = useCallback(() => {
+        if (!enableRegionNavigation || availableRegions.length === 0) return
+
+        const lastRegion = availableRegions[availableRegions.length - 1]
+        navigateToRegion(lastRegion)
+
+        if (enableAccessibility) {
+            announceRegionChange(lastRegion, 'last')
+        }
+    }, [availableRegions, navigateToRegion, enableRegionNavigation, enableAccessibility, announceRegionChange])
 
     // Copy shareable URL to clipboard
     const copyShareableUrl = useCallback(async () => {

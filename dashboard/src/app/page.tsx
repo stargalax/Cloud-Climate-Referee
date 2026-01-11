@@ -3,7 +3,8 @@
 import { useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import GlobalPitch from '@/components/map/GlobalPitch'
-import RefereeCard from '@/components/verdict/RefereeCard'
+import PhysicalCard from '@/components/verdict/PhysicalCard'
+import AnalysisPanel from '@/components/verdict/AnalysisPanel'
 import VARAnalysis from '@/components/charts/VARAnalysis'
 import ErrorBoundary from '@/components/ui/ErrorBoundary'
 import LoadingState, { LoadingOverlay } from '@/components/ui/LoadingState'
@@ -182,12 +183,12 @@ export default function Home() {
                                     />
                                 </motion.div>
 
-                                {/* Referee's Card */}
+                                {/* Physical Card (Right Sidebar) */}
                                 <motion.div
                                     initial={{ opacity: 0, x: 20 }}
                                     animate={{ opacity: 1, x: 0 }}
                                     transition={{ delay: 0.4 }}
-                                    layoutId="referee-card-container"
+                                    layoutId="physical-card-container"
                                 >
                                     <AnimatePresence mode="wait">
                                         <motion.div
@@ -197,7 +198,7 @@ export default function Home() {
                                             exit={{ opacity: 0, scale: 0.95 }}
                                             transition={{ duration: 0.3 }}
                                         >
-                                            <RefereeCard
+                                            <PhysicalCard
                                                 verdict={selectedRegion ? verdicts[selectedRegion] : undefined}
                                                 isVisible={!!selectedRegion}
                                             />
@@ -221,6 +222,34 @@ export default function Home() {
                         )}
                     </AnimatePresence>
 
+                    {/* Analysis Panel (Below Map) */}
+                    <AnimatePresence mode="wait">
+                        {!loading && (
+                            <motion.div
+                                initial={{ opacity: 0, y: 20 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ delay: 0.8 }}
+                                className="mt-3 sm:mt-4 lg:mt-6"
+                                layoutId="analysis-panel-container"
+                            >
+                                <AnimatePresence mode="wait">
+                                    <motion.div
+                                        key={selectedRegion || 'default-analysis'}
+                                        initial={{ opacity: 0, y: 10 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        exit={{ opacity: 0, y: -10 }}
+                                        transition={{ duration: 0.4 }}
+                                    >
+                                        <AnalysisPanel
+                                            verdict={selectedRegion ? verdicts[selectedRegion] : undefined}
+                                            isVisible={!!selectedRegion}
+                                        />
+                                    </motion.div>
+                                </AnimatePresence>
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
+
                     {/* VAR Analysis */}
                     <AnimatePresence mode="wait">
                         {!loading && (
@@ -240,7 +269,6 @@ export default function Home() {
                                         transition={{ duration: 0.4 }}
                                     >
                                         <VARAnalysis
-                                            selectedRegion={selectedRegion || undefined}
                                             verdict={selectedRegion ? verdicts[selectedRegion] : undefined}
                                         />
                                     </motion.div>
