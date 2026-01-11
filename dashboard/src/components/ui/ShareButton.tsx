@@ -8,12 +8,14 @@ interface ShareButtonProps {
     className?: string
     size?: 'small' | 'medium' | 'large'
     variant?: 'icon' | 'text' | 'full'
+    isDarkBackground?: boolean
 }
 
 export default function ShareButton({
     className = '',
     size = 'medium',
-    variant = 'icon'
+    variant = 'icon',
+    isDarkBackground = true
 }: ShareButtonProps) {
     const { state, getShareableUrl } = useDashboard()
     const { selectedRegion } = state
@@ -116,6 +118,25 @@ export default function ShareButton({
         )
     }
 
+    // Adaptive styling based on background
+    const getButtonClasses = () => {
+        if (isDarkBackground) {
+            // Dark background - use light button
+            return `
+                bg-slate-800/50 hover:bg-slate-700/50
+                border border-slate-600/50 hover:border-slate-500/50
+                text-slate-300 hover:text-slate-100
+            `
+        } else {
+            // Light background - use dark button
+            return `
+                bg-slate-950 hover:bg-slate-900
+                border border-slate-800 hover:border-slate-700
+                text-white hover:text-slate-100
+            `
+        }
+    }
+
     return (
         <motion.button
             onClick={handleShare}
@@ -124,11 +145,9 @@ export default function ShareButton({
                 ${sizeClasses[size]}
                 ${className}
                 flex items-center justify-center
-                bg-slate-800/50 hover:bg-slate-700/50
-                border border-slate-600/50 hover:border-slate-500/50
+                ${getButtonClasses()}
                 rounded-lg backdrop-blur-sm
-                text-slate-300 hover:text-slate-100
-                transition-all duration-200
+                transition-all duration-500
                 disabled:opacity-50 disabled:cursor-not-allowed
                 focus:outline-none focus:ring-2 focus:ring-slate-400/50
             `}

@@ -7,10 +7,9 @@ import PhysicalCard from '@/components/verdict/PhysicalCard'
 import AnalysisPanel from '@/components/verdict/AnalysisPanel'
 import VARAnalysis from '@/components/charts/VARAnalysis'
 import ErrorBoundary from '@/components/ui/ErrorBoundary'
-import LoadingState, { LoadingOverlay } from '@/components/ui/LoadingState'
+import { LoadingOverlay } from '@/components/ui/LoadingState'
 import ShareButton from '@/components/ui/ShareButton'
 import RefereePriorityPanel from '@/components/ui/RefereePriorityPanel'
-import { useKeyboardShortcutsModal } from '@/components/ui/KeyboardShortcuts'
 import { useDashboard, useUrlSync } from '@/contexts/DashboardContext'
 import { useKeyboardNavigation } from '@/hooks/useKeyboardNavigation'
 import { useTheme } from '../components/ui/ThemeProvider'
@@ -18,7 +17,7 @@ import { useTheme } from '../components/ui/ThemeProvider'
 export default function Home() {
     const { state, navigateToRegion, updateWeights, reevaluateAllRegions } = useDashboard()
     const { selectedRegion, verdicts, loading, error, isEvaluating } = state
-    const { setTheme, playWhistle } = useTheme()
+    const { setTheme, playWhistle, currentTheme } = useTheme()
 
     // Initialize URL synchronization
     useUrlSync()
@@ -30,8 +29,11 @@ export default function Home() {
         enableAccessibility: true
     })
 
-    // Initialize keyboard shortcuts modal
-    const { KeyboardShortcutsModal, toggleShortcuts } = useKeyboardShortcutsModal()
+    // Determine if we should use dark text based on verdict state
+    const currentVerdict = selectedRegion ? verdicts[selectedRegion] : null
+    const shouldUseDarkText = currentVerdict !== null
+    const headerTextClass = shouldUseDarkText ? 'text-slate-950' : 'text-white'
+    const subtitleTextClass = shouldUseDarkText ? 'text-slate-700' : 'text-slate-300'
 
     const handleRegionSelect = (regionCode: string) => {
         navigateToRegion(regionCode)
@@ -68,14 +70,14 @@ export default function Home() {
     useEffect(() => {
         const handleKeyDown = (event: KeyboardEvent) => {
             if (event.key === '?' && !event.ctrlKey && !event.metaKey) {
-                toggleShortcuts()
+                // Removed shortcuts functionality
                 event.preventDefault()
             }
         }
 
         document.addEventListener('keydown', handleKeyDown)
         return () => document.removeEventListener('keydown', handleKeyDown)
-    }, [toggleShortcuts])
+    }, [])
 
     if (error) {
         return (
@@ -113,41 +115,36 @@ export default function Home() {
                         className="text-center py-4 sm:py-6 lg:py-8 relative"
                     >
                         <motion.h1
-                            className="text-2xl sm:text-3xl lg:text-4xl font-bold text-shadow mb-2"
+                            className={`text-2xl sm:text-3xl lg:text-4xl font-bold text-shadow mb-2 transition-colors duration-500 ${headerTextClass}`}
                             layoutId="main-title"
                         >
                             ⚽ Region Arbitrator Dashboard
                         </motion.h1>
                         <motion.p
-                            className="text-slate-300 text-sm sm:text-base lg:text-lg mb-4"
+                            className={`text-sm sm:text-base lg:text-lg mb-4 transition-colors duration-500 ${subtitleTextClass}`}
                             layoutId="main-subtitle"
                         >
                             The Referee has reviewed your cloud infrastructure choices
                         </motion.p>
 
                         {/* Header Controls */}
-                        <div className="flex items-center justify-center space-x-4">
-                            <ShareButton variant="text" size="small" />
-                            <motion.button
-                                onClick={toggleShortcuts}
-                                className="px-3 py-2 text-sm text-slate-400 hover:text-slate-200 bg-slate-800/50 hover:bg-slate-700/50 border border-slate-600/50 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-slate-400/50"
-                                whileHover={{ scale: 1.05 }}
-                                whileTap={{ scale: 0.95 }}
-                                aria-label="Show keyboard shortcuts"
-                            >
-                                ⌨️ Shortcuts
-                            </motion.button>
+                        <div className="flex items-center justify-center">
+                            <ShareButton
+                                variant="text"
+                                size="small"
+                                isDarkBackground={!shouldUseDarkText}
+                            />
                         </div>
 
                         {/* Navigation hint */}
                         {!selectedRegion && (
                             <motion.div
-                                className="mt-4 text-xs text-slate-500"
+                                className={`mt-4 text-xs transition-colors duration-500 ${shouldUseDarkText ? 'text-slate-600' : 'text-slate-500'}`}
                                 initial={{ opacity: 0 }}
                                 animate={{ opacity: 1 }}
                                 transition={{ delay: 1 }}
                             >
-                                💡 Use arrow keys or click to navigate regions • Press ? for shortcuts
+                                💡 Use arrow keys or click to navigate regions
                             </motion.div>
                         )}
                     </motion.header>
@@ -289,9 +286,6 @@ export default function Home() {
                         </motion.div>
                     )}
                 </div>
-
-                {/* Keyboard Shortcuts Modal */}
-                <KeyboardShortcutsModal />
             </main>
         </ErrorBoundary>
     )

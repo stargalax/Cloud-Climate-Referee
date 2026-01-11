@@ -51,39 +51,43 @@
                 rgba(15, 23, 42, 1) 100%);
         background-size: 400% 400%;
         animation: breathe-gradient 8s ease-in-out infinite;
+        transition: background 700ms ease-in-out;
     }
 
     .breathe-red {
         background: linear-gradient(135deg,
-                rgba(15, 23, 42, 1) 0%,
-                rgba(59, 7, 7, 0.3) 25%,
-                rgba(127, 29, 29, 0.2) 50%,
-                rgba(59, 7, 7, 0.3) 75%,
-                rgba(15, 23, 42, 1) 100%);
+                rgba(254, 226, 226, 1) 0%,
+                rgba(252, 165, 165, 0.8) 25%,
+                rgba(248, 113, 113, 0.6) 50%,
+                rgba(252, 165, 165, 0.8) 75%,
+                rgba(254, 226, 226, 1) 100%);
         background-size: 400% 400%;
         animation: breathe-gradient 6s ease-in-out infinite;
+        transition: background 700ms ease-in-out;
     }
 
     .breathe-yellow {
         background: linear-gradient(135deg,
-                rgba(15, 23, 42, 1) 0%,
-                rgba(69, 26, 3, 0.3) 25%,
-                rgba(146, 64, 14, 0.2) 50%,
-                rgba(69, 26, 3, 0.3) 75%,
-                rgba(15, 23, 42, 1) 100%);
+                rgba(254, 243, 199, 1) 0%,
+                rgba(253, 230, 138, 0.8) 25%,
+                rgba(251, 191, 36, 0.6) 50%,
+                rgba(253, 230, 138, 0.8) 75%,
+                rgba(254, 243, 199, 1) 100%);
         background-size: 400% 400%;
         animation: breathe-gradient 7s ease-in-out infinite;
+        transition: background 700ms ease-in-out;
     }
 
     .breathe-green {
         background: linear-gradient(135deg,
-                rgba(15, 23, 42, 1) 0%,
-                rgba(6, 78, 59, 0.3) 25%,
-                rgba(16, 185, 129, 0.2) 50%,
-                rgba(6, 78, 59, 0.3) 75%,
-                rgba(15, 23, 42, 1) 100%);
+                rgba(220, 252, 231, 1) 0%,
+                rgba(167, 243, 208, 0.8) 25%,
+                rgba(52, 211, 153, 0.6) 50%,
+                rgba(167, 243, 208, 0.8) 75%,
+                rgba(220, 252, 231, 1) 100%);
         background-size: 400% 400%;
         animation: breathe-gradient 8s ease-in-out infinite;
+        transition: background 700ms ease-in-out;
     }
 
     .audio-controls {
