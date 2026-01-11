@@ -100,12 +100,6 @@ The Region Arbitrator is a cloud region evaluation system that uses a "Referee" 
 │  │  - Consistent global evaluation                                 │   │
 │  └──────────────────────────────────────────────────────────────────┘   │
 │                                                                          │
-│  ┌──────────────────────────────────────────────────────────────────┐   │
-│  │  Cloud Provider Pricing APIs                                    │   │
-│  │  - AWS Pricing API                                              │   │
-│  │  - Azure Pricing API                                            │   │
-│  │  - GCP Pricing API                                              │   │
-│  └──────────────────────────────────────────────────────────────────┘   │
 │                                                                          │
 └──────────────────────────────────────────────────────────────────────────┘
 ```
