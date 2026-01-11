@@ -1,0 +1,31 @@
+{
+    "name": "region-arbitrator-dashboard",
+    "version": "0.1.0",
+    "private": true,
+    "scripts": {
+        "dev": "next dev",
+        "build": "next build",
+        "start": "next start",
+        "lint": "next lint"
+    },
+    "dependencies": {
+        "autoprefixer": "^10.4.20",
+        "framer-motion": "^11.11.17",
+        "next": "15.1.1",
+        "postcss": "^8.4.49",
+        "react": "^18",
+        "react-dom": "^18",
+        "react-simple-maps": "^3.0.0",
+        "recharts": "^2.13.3",
+        "tailwindcss": "^3.4.0"
+    },
+    "devDependencies": {
+        "@types/node": "^20",
+        "@types/react": "^18",
+        "@types/react-dom": "^18",
+        "@types/react-simple-maps": "^3.0.6",
+        "eslint": "^8",
+        "eslint-config-next": "15.1.1",
+        "typescript": "^5"
+    }
+}

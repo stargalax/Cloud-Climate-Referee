@@ -1,0 +1,219 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+    html {
+        font-family: 'Inter', system-ui, sans-serif;
+    }
+
+    body {
+        @apply text-white min-h-screen;
+    }
+}
+
+@layer components {
+    .glass-panel {
+        @apply backdrop-blur-xl bg-slate-900/60 border border-white/10 rounded-xl shadow-glass;
+    }
+
+    .glass-panel-enhanced {
+        @apply backdrop-blur-xl bg-slate-900/70 border border-white/20 rounded-xl shadow-glass;
+        background: linear-gradient(135deg, rgba(15, 23, 42, 0.8) 0%, rgba(15, 23, 42, 0.6) 100%);
+    }
+
+    .stadium-glow {
+        @apply shadow-stadium;
+    }
+
+    .referee-card {
+        @apply glass-panel-enhanced p-6 transform transition-all duration-300;
+    }
+
+    .verdict-red {
+        @apply border-red-card/30 bg-red-card/10;
+    }
+
+    .verdict-yellow {
+        @apply border-yellow-card/30 bg-yellow-card/10;
+    }
+
+    .verdict-green {
+        @apply border-play-on/30 bg-play-on/10;
+    }
+
+    .breathe-background {
+        background: linear-gradient(135deg,
+                rgba(15, 23, 42, 1) 0%,
+                rgba(30, 41, 59, 1) 25%,
+                rgba(51, 65, 85, 1) 50%,
+                rgba(30, 41, 59, 1) 75%,
+                rgba(15, 23, 42, 1) 100%);
+        background-size: 400% 400%;
+        animation: breathe-gradient 8s ease-in-out infinite;
+    }
+
+    .breathe-red {
+        background: linear-gradient(135deg,
+                rgba(15, 23, 42, 1) 0%,
+                rgba(59, 7, 7, 0.3) 25%,
+                rgba(127, 29, 29, 0.2) 50%,
+                rgba(59, 7, 7, 0.3) 75%,
+                rgba(15, 23, 42, 1) 100%);
+        background-size: 400% 400%;
+        animation: breathe-gradient 6s ease-in-out infinite;
+    }
+
+    .breathe-yellow {
+        background: linear-gradient(135deg,
+                rgba(15, 23, 42, 1) 0%,
+                rgba(69, 26, 3, 0.3) 25%,
+                rgba(146, 64, 14, 0.2) 50%,
+                rgba(69, 26, 3, 0.3) 75%,
+                rgba(15, 23, 42, 1) 100%);
+        background-size: 400% 400%;
+        animation: breathe-gradient 7s ease-in-out infinite;
+    }
+
+    .breathe-green {
+        background: linear-gradient(135deg,
+                rgba(15, 23, 42, 1) 0%,
+                rgba(6, 78, 59, 0.3) 25%,
+                rgba(16, 185, 129, 0.2) 50%,
+                rgba(6, 78, 59, 0.3) 75%,
+                rgba(15, 23, 42, 1) 100%);
+        background-size: 400% 400%;
+        animation: breathe-gradient 8s ease-in-out infinite;
+    }
+
+    .audio-controls {
+        @apply fixed top-4 right-4 z-50 glass-panel p-2 flex items-center gap-2;
+    }
+
+    .whistle-button {
+        @apply w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition-all duration-200;
+    }
+
+    .whistle-button:hover {
+        transform: scale(1.1);
+    }
+
+    .whistle-button.muted {
+        @apply bg-red-500/20 text-red-400;
+    }
+}
+
+@layer utilities {
+    .text-shadow {
+        text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+    }
+
+    .animate-breathe {
+        animation: breathe 4s ease-in-out infinite;
+    }
+
+    .animate-whistle {
+        animation: whistle-bounce 0.6s ease-out;
+    }
+
+    .animate-scale-in {
+        animation: scale-in 0.3s ease-out;
+    }
+
+    .animate-fade-in {
+        animation: fade-in 0.5s ease-out;
+    }
+}
+
+@keyframes breathe {
+
+    0%,
+    100% {
+        opacity: 0.8;
+    }
+
+    50% {
+        opacity: 1;
+    }
+}
+
+@keyframes breathe-gradient {
+
+    0%,
+    100% {
+        background-position: 0% 50%;
+    }
+
+    50% {
+        background-position: 100% 50%;
+    }
+}
+
+@keyframes whistle-bounce {
+    0% {
+        transform: scale(1) rotate(0deg);
+    }
+
+    25% {
+        transform: scale(1.2) rotate(-5deg);
+    }
+
+    50% {
+        transform: scale(1.1) rotate(5deg);
+    }
+
+    75% {
+        transform: scale(1.05) rotate(-2deg);
+    }
+
+    100% {
+        transform: scale(1) rotate(0deg);
+    }
+}
+
+@keyframes scale-in {
+    0% {
+        transform: scale(0.8);
+        opacity: 0;
+    }
+
+    100% {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+@keyframes fade-in {
+    0% {
+        opacity: 0;
+    }
+
+    100% {
+        opacity: 1;
+    }
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .glass-panel {
+        @apply mx-2 rounded-lg;
+    }
+
+    .referee-card {
+        @apply p-4;
+    }
+
+    .audio-controls {
+        @apply top-2 right-2 p-1;
+    }
+}
+
+@media (max-width: 640px) {
+    .glass-panel {
+        @apply mx-1 rounded-md;
+    }
+
+    .referee-card {
+        @apply p-3;
+    }
+}
