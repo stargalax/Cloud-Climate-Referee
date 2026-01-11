@@ -123,6 +123,7 @@ export class RegionCarbonAnalyzer implements CarbonAnalyzer {
 
     /**
      * Calculate confidence based on data source quality and freshness
+     * Implements requirement: If data is more than 2 hours old, decrease confidence by 20%
      */
     private calculateConfidence(metrics: CarbonMetrics): number {
         let confidence = 1.0;
@@ -137,10 +138,16 @@ export class RegionCarbonAnalyzer implements CarbonAnalyzer {
         }
 
         // Factor 2: Data freshness (carbon data changes frequently)
+        // REQUIREMENT: If data is more than 2 hours old, decrease confidence by 20%
         const dataAgeHours = this.getDataAgeHours(metrics.lastUpdated);
-        if (dataAgeHours > this.MAX_DATA_AGE_HOURS) {
-            const staleFactor = Math.min(dataAgeHours / (this.MAX_DATA_AGE_HOURS * 4), 0.4);
-            confidence -= staleFactor;
+        if (dataAgeHours > 2) {
+            confidence -= 0.2; // 20% penalty for data older than 2 hours
+
+            // Additional penalties for very stale data
+            if (dataAgeHours > this.MAX_DATA_AGE_HOURS) {
+                const staleFactor = Math.min((dataAgeHours - this.MAX_DATA_AGE_HOURS) / (this.MAX_DATA_AGE_HOURS * 4), 0.3);
+                confidence -= staleFactor;
+            }
         }
 
         // Factor 3: Data consistency checks

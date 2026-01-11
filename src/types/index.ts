@@ -84,7 +84,7 @@ export interface GreenSuggestion {
 
 export interface ArbitratorVerdict {
     region: CloudRegion;
-    verdict: 'Red Card' | 'Yellow Card' | 'Play On';
+    verdict: 'Red Card' | 'Yellow Card' | 'Play On' | 'Blue Card';
     reason: string;
     suggestion: GreenSuggestion;
     scores: {
@@ -94,6 +94,7 @@ export interface ArbitratorVerdict {
         composite: CompositeScore;
     };
     timestamp: Date;
+    refereeConfidence?: 'High' | 'Medium' | 'Low';
 }
 
 // Data collection interfaces
@@ -101,6 +102,31 @@ export interface DataCollector {
     getLatencyData(region: CloudRegion): Promise<LatencyMetrics>;
     getCarbonData(region: CloudRegion): Promise<CarbonMetrics>;
     getCostData(region: CloudRegion): Promise<CostMetrics>;
+}
+
+// Error handling types
+export class DataCollectionError extends Error {
+    constructor(
+        message: string,
+        public readonly region: CloudRegion,
+        public readonly dataType: 'latency' | 'carbon' | 'cost',
+        public readonly cause?: Error
+    ) {
+        super(message);
+        this.name = 'DataCollectionError';
+    }
+}
+
+export class DataQualityError extends Error {
+    constructor(
+        message: string,
+        public readonly region: CloudRegion,
+        public readonly dataType: 'latency' | 'carbon' | 'cost',
+        public readonly qualityIssue: 'stale' | 'invalid' | 'incomplete' | 'untrusted'
+    ) {
+        super(message);
+        this.name = 'DataQualityError';
+    }
 }
 
 // Analysis interfaces
@@ -127,8 +153,23 @@ export interface ScoringEngine {
 }
 
 export interface VerdictGenerator {
-    generateVerdict(score: CompositeScore, region: CloudRegion): ArbitratorVerdict;
-    suggestGreenAlternative(region: CloudRegion): GreenSuggestion;
+    generateVerdict(
+        score: CompositeScore,
+        region: CloudRegion,
+        individualScores?: {
+            latency: LatencyScore;
+            carbon: CarbonScore;
+            cost: CostScore;
+        },
+        availableRegions?: CloudRegion[],
+        regionScores?: Map<string, { carbon: CarbonScore; latency: LatencyScore; cost: CostScore }>,
+        dataError?: Error
+    ): ArbitratorVerdict;
+    suggestGreenAlternative(
+        region: CloudRegion,
+        availableRegions?: CloudRegion[],
+        regionScores?: Map<string, { carbon: CarbonScore; latency: LatencyScore; cost: CostScore }>
+    ): GreenSuggestion;
 }
 
 export interface RegionArbitrator {

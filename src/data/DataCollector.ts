@@ -3,12 +3,19 @@ import {
     CloudRegion,
     LatencyMetrics,
     CarbonMetrics,
-    CostMetrics
-} from '../types/index.js';
+    CostMetrics,
+    DataCollectionError
+} from '../types/index';
 import * as dotenv from 'dotenv';
+import * as fs from 'fs';
+import * as path from 'path';
 
 // Load environment variables
 dotenv.config();
+
+// Load region mapping
+const regionMappingPath = path.join(__dirname, 'region-mapping.json');
+const regionMapping: Record<string, string> = JSON.parse(fs.readFileSync(regionMappingPath, 'utf8'));
 
 /**
  * DataCollector implementation with Electricity Maps API integration
@@ -41,7 +48,8 @@ export class RegionDataCollector implements DataCollector {
     }
 
     /**
-     * Collect carbon intensity data using Electricity Maps API
+     * Collect carbon intensity data using Electricity Maps API with forecast endpoint
+     * Throws DataCollectionError for API failures that should trigger Blue Card
      */
     async getCarbonData(region: CloudRegion): Promise<CarbonMetrics> {
         try {
@@ -53,15 +61,42 @@ export class RegionDataCollector implements DataCollector {
                 return this.getMockCarbonData(region);
             }
 
-            // Fetch current carbon intensity from Electricity Maps
+            // Fetch carbon intensity forecast from Electricity Maps
             const response = await fetch(
-                `${this.baseElectricityMapsUrl}/carbon-intensity/latest?zone=${zoneCode}`,
+                `${this.baseElectricityMapsUrl}/carbon-intensity/forecast?zone=${zoneCode}`,
                 {
                     headers: {
                         'auth-token': this.electricityMapsApiKey
-                    }
+                    },
+                    // Add timeout to prevent hanging requests
+                    signal: AbortSignal.timeout(10000) // 10 second timeout
                 }
             );
+
+            // Handle specific HTTP errors that should trigger Blue Card
+            if (response.status === 404) {
+                throw new DataCollectionError(
+                    `Zone key '${zoneCode}' not found in Electricity Maps API`,
+                    region,
+                    'carbon'
+                );
+            }
+
+            if (response.status === 429) {
+                throw new DataCollectionError(
+                    `API rate limit exceeded for zone '${zoneCode}'`,
+                    region,
+                    'carbon'
+                );
+            }
+
+            if (response.status >= 500) {
+                throw new DataCollectionError(
+                    `Electricity Maps API server error (${response.status}) for zone '${zoneCode}'`,
+                    region,
+                    'carbon'
+                );
+            }
 
             if (!response.ok) {
                 console.warn(`Electricity Maps API error: ${response.status}. Using mock data.`);
@@ -70,13 +105,27 @@ export class RegionDataCollector implements DataCollector {
 
             const data = await response.json() as any;
 
-            // Fetch renewable percentage
+            // Get the most recent forecast data point
+            const latestForecast = data.forecast && data.forecast.length > 0
+                ? data.forecast[0]
+                : null;
+
+            if (!latestForecast) {
+                throw new DataCollectionError(
+                    `No forecast data available for zone '${zoneCode}'`,
+                    region,
+                    'carbon'
+                );
+            }
+
+            // Fetch renewable percentage from power breakdown
             const renewableResponse = await fetch(
                 `${this.baseElectricityMapsUrl}/power-breakdown/latest?zone=${zoneCode}`,
                 {
                     headers: {
                         'auth-token': this.electricityMapsApiKey
-                    }
+                    },
+                    signal: AbortSignal.timeout(10000) // 10 second timeout
                 }
             );
 
@@ -87,13 +136,39 @@ export class RegionDataCollector implements DataCollector {
             }
 
             return {
-                carbonIntensity: data.carbonIntensity || 0,
+                carbonIntensity: latestForecast.carbonIntensity || 0,
                 renewablePercentage,
-                dataSource: 'Electricity Maps API',
-                lastUpdated: new Date(data.datetime)
+                dataSource: 'Electricity Maps API (Forecast)',
+                lastUpdated: new Date(latestForecast.datetime)
             };
 
         } catch (error) {
+            // Re-throw DataCollectionError for Blue Card scenarios
+            if (error instanceof DataCollectionError) {
+                throw error;
+            }
+
+            // Handle network timeouts and other fetch errors
+            if (error instanceof Error) {
+                if (error.name === 'TimeoutError' || error.message.includes('timeout')) {
+                    throw new DataCollectionError(
+                        `Network timeout while fetching carbon data for region '${region.regionCode}'`,
+                        region,
+                        'carbon',
+                        error
+                    );
+                }
+
+                if (error.message.includes('fetch')) {
+                    throw new DataCollectionError(
+                        `Network error while fetching carbon data for region '${region.regionCode}': ${error.message}`,
+                        region,
+                        'carbon',
+                        error
+                    );
+                }
+            }
+
             console.warn('Failed to fetch carbon data from Electricity Maps:', error);
             return this.getMockCarbonData(region);
         }
@@ -157,21 +232,18 @@ export class RegionDataCollector implements DataCollector {
     }
 
     /**
-     * Map cloud region to Electricity Maps zone code
+     * Map cloud region to Electricity Maps zone code using the mapping file
      */
     private mapRegionToZoneCode(region: CloudRegion): string {
-        // Map cloud provider regions to Electricity Maps zone codes
-        const regionMappings: Record<string, string> = {
-            'us-east-1': 'US-MIDA', // Virginia -> Mid-Atlantic
-            'us-west-2': 'US-NW', // Oregon -> Northwest
-            'eu-west-1': 'IE', // Ireland
-            'eu-central-1': 'DE', // Germany
-            'ap-southeast-1': 'SG', // Singapore
-            'ap-northeast-1': 'JP-TK', // Tokyo
-            // Add more mappings as needed
-        };
+        // First try to get the zone code from our mapping file
+        const zoneCode = regionMapping[region.regionCode];
+        if (zoneCode) {
+            return zoneCode;
+        }
 
-        return regionMappings[region.regionCode] || region.location.country;
+        // Fallback to country code if region not found in mapping
+        console.warn(`Region ${region.regionCode} not found in mapping, using country code: ${region.location.country}`);
+        return region.location.country;
     }
 
     /**
@@ -200,16 +272,29 @@ export class RegionDataCollector implements DataCollector {
      * Generate mock carbon data when API is unavailable
      */
     private getMockCarbonData(region: CloudRegion): CarbonMetrics {
-        // Mock data based on typical regional characteristics
+        // Mock data based on typical regional characteristics using our zone mapping
+        const zoneCode = regionMapping[region.regionCode] || region.location.country;
+
         const mockData: Record<string, { intensity: number; renewable: number }> = {
+            'US-MIDA-PJM': { intensity: 400, renewable: 20 }, // US East
+            'US-NW-PACW': { intensity: 250, renewable: 60 },  // US West (hydro-heavy)
+            'IE': { intensity: 300, renewable: 35 },          // Ireland
+            'DE': { intensity: 350, renewable: 45 },          // Germany
+            'JP-ON': { intensity: 450, renewable: 18 },       // Japan
+            'SG': { intensity: 500, renewable: 5 },           // Singapore
+            'CA-QC': { intensity: 150, renewable: 95 },       // Quebec (hydro)
+            'SE-SE3': { intensity: 100, renewable: 85 },      // Sweden (hydro/nuclear)
+            'BR-CS': { intensity: 200, renewable: 75 },       // Brazil (hydro)
+            'IN-WE': { intensity: 600, renewable: 15 },       // India West
+            // Fallback for unknown zones
             'US': { intensity: 400, renewable: 20 },
-            'DE': { intensity: 350, renewable: 45 },
-            'IE': { intensity: 300, renewable: 35 },
-            'SG': { intensity: 500, renewable: 5 },
-            'JP': { intensity: 450, renewable: 18 },
+            'CA': { intensity: 200, renewable: 80 },
+            'SE': { intensity: 100, renewable: 85 },
+            'BR': { intensity: 200, renewable: 75 },
+            'IN': { intensity: 600, renewable: 15 },
+            'JP': { intensity: 450, renewable: 18 }
         };
 
-        const zoneCode = this.mapRegionToZoneCode(region);
         const data = mockData[zoneCode] || { intensity: 400, renewable: 25 };
 
         return {

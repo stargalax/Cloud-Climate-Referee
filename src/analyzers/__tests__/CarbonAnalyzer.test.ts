@@ -1,5 +1,6 @@
 import { RegionCarbonAnalyzer } from '../CarbonAnalyzer';
 import { CarbonMetrics } from '../../types/index';
+import * as fc from 'fast-check';
 
 describe('RegionCarbonAnalyzer', () => {
     let analyzer: RegionCarbonAnalyzer;
@@ -178,6 +179,49 @@ describe('RegionCarbonAnalyzer', () => {
             expect(renewableThresholds.high).toBe(80);
             expect(renewableThresholds.good).toBe(50);
             expect(renewableThresholds.low).toBe(20);
+        });
+    });
+
+    describe('Property-Based Tests', () => {
+        /**
+         * Property Test: Data Freshness Confidence Reduction
+         * Feature: region-arbitrator, Property 14: For any carbon metrics with data older than 2 hours, 
+         * confidence should be reduced by at least 20%
+         * Validates: Requirements 6.4 (uncertainty indication)
+         */
+        it('should reduce confidence by 20% for data older than 2 hours', () => {
+            fc.assert(fc.property(
+                fc.record({
+                    carbonIntensity: fc.float({ min: 0, max: 500 }),
+                    renewablePercentage: fc.float({ min: 0, max: 100 }),
+                    dataSource: fc.constantFrom('electricitymaps', 'eia.gov', 'iea.org', 'ember-climate.org'),
+                    hoursOld: fc.integer({ min: 3, max: 48 }) // Data older than 2 hours
+                }),
+                (testData) => {
+                    // Create fresh data metrics
+                    const freshMetrics: CarbonMetrics = {
+                        carbonIntensity: testData.carbonIntensity,
+                        renewablePercentage: testData.renewablePercentage,
+                        dataSource: testData.dataSource,
+                        lastUpdated: new Date() // Fresh data
+                    };
+
+                    // Create stale data metrics (older than 2 hours)
+                    const staleMetrics: CarbonMetrics = {
+                        ...freshMetrics,
+                        lastUpdated: new Date(Date.now() - testData.hoursOld * 60 * 60 * 1000)
+                    };
+
+                    const freshResult = analyzer.analyzeCarbonImpact(freshMetrics);
+                    const staleResult = analyzer.analyzeCarbonImpact(staleMetrics);
+
+                    // Property: Stale data should have at least 20% lower confidence
+                    const confidenceReduction = freshResult.confidence - staleResult.confidence;
+
+                    // Allow for small floating point errors and ensure at least 19% reduction
+                    expect(confidenceReduction).toBeGreaterThanOrEqual(0.19);
+                }
+            ), { numRuns: 100 });
         });
     });
 });
