@@ -163,7 +163,7 @@ This implementation plan breaks down the Region Arbitrator system into discrete 
   - Verify all requirements are met through comprehensive testing
   - Validate system performance and error handling
 
-- [ ] 12. Initialize React/Next.js dashboard frontend
+- [-] 12. Initialize React/Next.js dashboard frontend
   - Create dashboard/ directory with Next.js project structure
   - Set up TypeScript configuration and core dependencies
   - Install required packages: framer-motion, react-simple-maps, recharts, tailwindcss
@@ -191,6 +191,8 @@ This implementation plan breaks down the Region Arbitrator system into discrete 
   - Create 24-hour carbon intensity forecast area chart
   - Apply dynamic verdict color theming with 0.2 opacity fills
   - Add animated number ticker for carbon intensity values
+  - Create scrolling "Live" ticker at bottom (ESPN-style): "LATEST: CA-CENTRAL-1 (QUEBEC) IS CURRENTLY 94% RENEWABLE... US-EAST-1 UNDER REVIEW..."
+  - Implement ticker with real-time region status updates and renewable percentages
   - _Requirements: 1.1, 1.2, 1.3, 1.4, 3.1, 3.2_
 
 - [ ] 12.4 Integrate RegionArbitrator backend API
@@ -205,6 +207,8 @@ This implementation plan breaks down the Region Arbitrator system into discrete 
   - Implement smooth region selection transitions with layoutId animations
   - Add glassmorphism styling (backdrop-blur-xl, bg-slate-900/60, border-white/10)
   - Configure responsive design for different screen sizes
+  - Add optional "Whistle" sound effect (soft mechanical click/whistle) when new verdict cards appear
+  - Implement audio controls with user preference settings (mute/unmute toggle)
   - _Requirements: All requirements (enhanced UX)_
 
 - [ ] 12.6 Add dashboard state management and routing
