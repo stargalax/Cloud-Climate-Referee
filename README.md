@@ -8,6 +8,10 @@ The Region Arbitrator is a cloud region evaluation system that uses a "Referee" 
 ## Youtube link
 [![Region Arbitrator Demo](https://img.youtube.com/vi/mwZSbuYwukI/hqdefault.jpg)](https://youtu.be/mwZSbuYwukI)
 
+### Live demo : https://cloud-climate-referee.vercel.app/ 
+### AWS article read here: https://builder.aws.com/content/37qC0qLyb5nQifoih4NWnb6fYBT/region-arbitrator-how-i-built-a-referee-which-can-score-the-worlds-data-centers-and-suggest-the-one-that-fits-your-needs
+
+
 ## Architecture Diagram
 
 ```
